@@ -1,1 +1,2 @@
 Implement the Barnes-Hut tree optimization
+Use WebWorkers for multi-threading

@@ -1,0 +1,106 @@
+<html>
+	<head>
+		<style>
+			body {
+				margin:0px;
+				background-color:black;
+				color:white;
+			}
+			#cnv {
+				display:none;
+				
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="cnv"></canvas>
+		<div id="options">
+			particles:<input type="text" id="nparts" size="1"><br>
+			mass:<input type="text" id="partmass" size="1"><br>
+			<button onclick="start()">Start</button>
+		</div>
+		<script>
+			function removeElement(id) {
+				var element=document.getElementById(id);
+				element.parentNode.removeChild(element);
+			}
+			function rand(limit) {
+				return Math.random()*limit;
+			}
+			part=function(xp,yp,xv,yv,mass) {
+				this.xp=xp;
+				this.yp=yp;
+				this.xv=xv;
+				this.yv=yv;
+				this.mass=mass;
+			}
+			world=function () {
+				this.cnv=document.getElementById("cnv")
+				this.cnv.ctx=this.cnv.getContext("2d");
+				this.parts=[]
+				this.addPart=function(mass) {
+					this.parts.push(new part(rand(this.cnv.width),rand(this.cnv.height),0,0,mass));
+				}
+				this.step=function() {//this function actually does the integration
+					for(var a=0;a<this.parts.length;++a) {//for every particle
+						for(var b=a+1;b<this.parts.length;++b) {//interact with every other particle
+								dx=this.parts[b].xp-this.parts[a].xp;//x distance
+								dy=this.parts[b].yp-this.parts[a].yp;//y distance
+								f=dx*dx+dy*dy;//force falloff
+								//apply the acceleration to the velocity
+								this.parts[a].xv+=this.parts[b].mass*dx/f;
+								this.parts[a].yv+=this.parts[b].mass*dy/f;
+								this.parts[b].xv-=this.parts[a].mass*dx/f;
+								this.parts[b].yv-=this.parts[a].mass*dy/f;
+						}
+					}
+					for(a=0;a<this.parts.length;++a) {//if the particle hits an edge, reverse it's velocity, and reduce it to half
+						if((this.parts[a].xp+this.parts[a].xv<=0)+(this.parts[a].xp+this.parts[a].xv>this.cnv.width)) {
+							this.parts[a].xv*=-.05;
+						}
+						if((this.parts[a].yp+this.parts[a].yv<=0)+(this.parts[a].yp+this.parts[a].yv>this.cnv.height)) {
+							this.parts[a].yv*=-.05;
+						}
+						//add the velocities to the positions
+						this.parts[a].xp+=this.parts[a].xv;
+						this.parts[a].yp+=this.parts[a].yv;
+					}
+				}
+				this.draw=function() {//draw the particles
+					this.cnv.ctx.fillRect(0,0,this.cnv.width,this.cnv.height);//clear the screen
+					this.cnv.ctx.beginPath();//begin the path
+					
+					for(var a=0;a<this.parts.length-1;++a) {
+						this.cnv.ctx.arc(this.parts[a].xp,this.parts[a].yp,10,0,2*Math.PI);//draw a circle of radius 10
+						this.cnv.ctx.moveTo(this.parts[a+1].xp+10,this.parts[a+1].yp);//move to where the next particle is
+					}
+					this.cnv.ctx.arc(this.parts[a].xp,this.parts[a].yp,10,0,2*Math.PI);//draw the last particle
+					this.cnv.ctx.closePath();//close the path
+					this.cnv.ctx.stroke();//draw
+				}
+			}
+			function step() {
+				w.step();//step the world
+				w.draw();//draw the world
+				requestAnimationFrame(step);//wait until the next animation frame is available
+			}
+			function start() {
+				w=new world();//init the world
+				
+				var nparts=parseInt(document.getElementById("nparts").value);
+				var mass=parseFloat(document.getElementById("partmass").value);
+				cnv.style.display="inline";//show the canvas
+				w.cnv.width=window.innerWidth;//set the canvas width
+				w.cnv.height=window.innerHeight;//and the height
+				for(var i=0;i<nparts;++i) {//add the particles to the world
+					w.addPart(mass);
+				}
+				w.cnv.ctx.lineWidth="1";
+				w.cnv.ctx.strokeStyle="#FFFFFF";//make the particles white
+				w.cnv.ctx.fillStyle="#000000";//and the background black
+				removeElement("options");//remove the options element
+				requestAnimationFrame(step);//start the simulation
+			}
+		</script>
+	</body>
+</html>
